@@ -4,6 +4,19 @@ import sys;
 import ply.lex as lex;
 import ply.yacc as yacc;
 
+
+class Bitmap:
+    __init__(self, op, arg1, arg2):
+	self.op = op
+	self.arg1 =  arg1
+	self.arg2 = arg2
+	
+    eval:
+	mem = get_mem()
+	print("" % mem, arg1, op, arg2)
+
+
+
 literals = "{}()<>=;+-*/"
 
 tokens = ( "ID", "NUMBER", "IF",  "ELSE", "EQ", "NEQ", "LE", "GE" );
@@ -114,11 +127,14 @@ def p_stmt(p):
 if len(sys.argv)>1:
     file = open(sys.argv[1], "r");
 else:
-    file = open("example.txt", "r");
+    file = open("dane.txt", "r");
 
 
 lexer = lex.lex()
 parser = yacc.yacc()
 text = file.read()
 parser.parse(text, lexer=lexer)
+
+
+
 
