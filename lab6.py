@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys;
+import math;
 import ply.lex as lex;
 import ply.yacc as yacc;
 
@@ -13,17 +14,68 @@ class Mem():
         newmem = "mem" + str(self.counter)
         self.counter += 1
         return newmem
+        
+class Pos():
+    def __init__(self):
+        self.counter = 101
+        
+    def get_pos(self):
+        newpos = str(self.counter)
+        self.counter += 1
+        return newpos
+        
 
 class Expr():
-    def __init__(self, op, arg1, arg2):
+    def __init__(self, arg1, op, arg2):
         self.op = op
         self.arg1 =  arg1
         self.arg2 = arg2
     
     def eval(self):
+        ret1 = self.arg1.eval()
+        ret2 = self.arg2.eval()
         mem = memgen.get_mem()
-        print(mem," = ", self.arg1, self.op, self.arg2)
+        pos = posgen.get_pos()
+        print(pos, ": ", mem, " = ", ret1, self.op, ret2)
+        return mem
 
+class Const():
+    def __init__(self, val):
+        if(val == math.floor(val)):
+            self.val = int(val)
+        else:
+            self.val = val
+    
+    def eval(self):
+        return self.val
+
+class Var():
+    def __init__(self, name):
+        self.name = name
+        
+    def eval(self):
+        return self.name
+    
+class Assign():
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+        
+    def eval(self):
+        ret1 = self.left.eval()
+        ret2 = self.right.eval()
+        pos = posgen.get_pos()
+        print(pos, ": ", ret1, " = ", ret2)
+
+class Compar():
+    pass
+    
+class ChoiceInstr():
+    pass
+    
+class ListInstr():
+    pass
+    
 
 
 literals = "{}()<>=;+-*/"
@@ -103,6 +155,9 @@ def p_instruction(p):
 
 def p_assignment(p):
     """assignment : ID '=' expression ';' """
+    
+    p[0] = Assign(Var(p[1]),p[3])
+    p[0].eval()
 
 def p_expression(p):
     """expression : NUMBER
@@ -114,11 +169,15 @@ def p_expression(p):
                   | '(' expression ')' """
     
     if(len(p) == 2):
-        p[0] = p[1]              
+        if(type(p[1]) == float):
+            p[0] = Const(p[1])
+        else:
+            p[0] = Var(p[1])
     elif(len(p) == 4):
-        if(p[2] == '+'):
-            some_expr = Expr(p[2],p[1],p[3])
-            some_expr.eval()
+        if(p[1] != '('):
+            p[0] = Expr(p[1],p[2],p[3])
+        else:
+            p[0] = p[2]
 
 def p_choice_instr(p):
     """choice_instr : IF '(' condition ')' stmt %prec IFX
@@ -142,10 +201,11 @@ def p_stmt(p):
 if len(sys.argv)>1:
     file = open(sys.argv[1], "r");
 else:
-    file = open("dane.txt", "r");
+    file = open("example.txt", "r");
 
 
 memgen = Mem()
+posgen = Pos()
 
 lexer = lex.lex()
 parser = yacc.yacc()
