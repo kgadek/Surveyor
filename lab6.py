@@ -4,21 +4,25 @@ import sys;
 import ply.lex as lex;
 import ply.yacc as yacc;
 
-memnum = 1
 
-get_mem():
-	memnum += 1
-	return "mem" + str(memnum - 1)
+class Mem():
+    def __init__(self):
+        self.counter = 1
+        
+    def get_mem(self):
+        newmem = "mem" + str(self.counter)
+        self.counter += 1
+        return newmem
 
-class Bitmap:
-	__init__(self, op, arg1, arg2):
-	self.op = op
-	self.arg1 =  arg1
-	self.arg2 = arg2
-	
-	eval:
-		mem = get_mem()
-		print("" % mem, arg1, op, arg2)
+class Expr():
+    def __init__(self, op, arg1, arg2):
+        self.op = op
+        self.arg1 =  arg1
+        self.arg2 = arg2
+    
+    def eval(self):
+        mem = memgen.get_mem()
+        print(mem," = ", self.arg1, self.op, self.arg2)
 
 
 
@@ -108,7 +112,13 @@ def p_expression(p):
                   | expression '*' expression
                   | expression '/' expression
                   | '(' expression ')' """
-
+    
+    if(len(p) == 2):
+        p[0] = p[1]              
+    elif(len(p) == 4):
+        if(p[2] == '+'):
+            some_expr = Expr(p[2],p[1],p[3])
+            some_expr.eval()
 
 def p_choice_instr(p):
     """choice_instr : IF '(' condition ')' stmt %prec IFX
@@ -134,6 +144,8 @@ if len(sys.argv)>1:
 else:
     file = open("dane.txt", "r");
 
+
+memgen = Mem()
 
 lexer = lex.lex()
 parser = yacc.yacc()
