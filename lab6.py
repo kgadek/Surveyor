@@ -4,16 +4,21 @@ import sys;
 import ply.lex as lex;
 import ply.yacc as yacc;
 
+memnum = 1
+
+get_mem():
+	memnum += 1
+	return "mem" + str(memnum - 1)
 
 class Bitmap:
-    __init__(self, op, arg1, arg2):
+	__init__(self, op, arg1, arg2):
 	self.op = op
 	self.arg1 =  arg1
 	self.arg2 = arg2
 	
-    eval:
-	mem = get_mem()
-	print("" % mem, arg1, op, arg2)
+	eval:
+		mem = get_mem()
+		print("" % mem, arg1, op, arg2)
 
 
 
