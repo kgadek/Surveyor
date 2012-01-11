@@ -134,12 +134,12 @@ class ChoiceInstr():
         wyn += ret
         jumppos1 = 0
         ret1 = self.sttm.eval()
+        wyn2 = ""
         if(self.sttm2 != 0):
             pos2 = posgen.get_pos()
             jumppos1 = posgen.get_jump_pos()
             ret2 = self.sttm2.eval()
             jumppos2 = posgen.get_jump_pos()
-            wyn2 = ""
             wyn2 += str(pos2) + ": " + "if" + "== " + "1 " + "1 " + str(jumppos2) + "\n"
             wyn2 += ret2
         if(jumppos1 == 0):
