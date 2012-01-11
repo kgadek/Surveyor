@@ -5,6 +5,13 @@ import math;
 import ply.lex as lex;
 import ply.yacc as yacc;
 
+def invert_op(op):
+    if(op == "<"): return ">="
+    elif(op == ">"): return "<="
+    elif(op == ">="): return "<"
+    elif(op == "<="): return ">"
+    elif(op == "=="): return "!="
+    elif(op == "!="): return "=="
 
 class Mem():
     def __init__(self):
@@ -24,7 +31,7 @@ class Pos():
         self.counter += 1
         return newpos
         
-    def get_jump(self):
+    def get_jump_pos(self):
         newpos = str(self.counter)
         return newpos
 
@@ -33,14 +40,24 @@ class Expr():
         self.op = op
         self.arg1 =  arg1
         self.arg2 = arg2
+        self.mem = ""
+    
+    def get_res(self):
+        return self.mem
     
     def eval(self):
         ret1 = self.arg1.eval()
         ret2 = self.arg2.eval()
+        retmem1 = self.arg1.get_res()
+        retmem2 = self.arg2.get_res()
         mem = memgen.get_mem()
+        self.mem = mem
         pos = posgen.get_pos()
-        print(pos, ": ", mem, " = ", ret1, self.op, ret2)
-        return mem
+        wyn = ""
+        wyn += ret1
+        wyn += ret2
+        wyn += str(pos) + ": " + mem + " = " + retmem1 + " " + self.op + " " + retmem2 + "\n"
+        return wyn
 
 class Const():
     def __init__(self, val):
@@ -49,15 +66,21 @@ class Const():
         else:
             self.val = val
     
+    def get_res(self):
+        return str(self.val)
+    
     def eval(self):
-        return self.val
+        return ""
 
 class Var():
     def __init__(self, name):
         self.name = name
         
-    def eval(self):
+    def get_res(self):
         return self.name
+        
+    def eval(self):
+        return ""
     
 class Assign():
     def __init__(self, left, right):
@@ -67,19 +90,35 @@ class Assign():
     def eval(self):
         ret1 = self.left.eval()
         ret2 = self.right.eval()
+        retmem1 = self.left.get_res()
+        retmem2 = self.right.get_res()
         pos = posgen.get_pos()
-        print(pos, ": ", ret1, " = ", ret2)
+        wyn = ""
+        wyn += ret1
+        wyn += ret2
+        wyn += str(pos) + ": " + retmem1 + " = " + retmem2 + "\n"
+        return wyn
 
 class Compar():
     def __init__(self, arg1, op, arg2):
         self.op = op
         self.arg1 = arg1
         self.arg2 = arg2
-        
+        self.retmem1 = ""
+        self.retmem2 = ""
+    
+    def get_res(self):
+        return (self.op,self.retmem1,self.retmem2)
+    
     def eval(self):
         ret1 = self.arg1.eval()
         ret2 = self.arg2.eval()
-        return (self.op,ret1,ret2)
+        wyn = ""
+        wyn += ret1
+        wyn += ret2
+        self.retmem1 = self.arg1.get_res()
+        self.retmem2 = self.arg2.get_res()
+        return wyn
     
 class ChoiceInstr():
     def __init__(self, cond, sttm, sttm2):
@@ -89,21 +128,36 @@ class ChoiceInstr():
         
     def eval(self):
         ret = self.cond.eval()
+        retmem = self.cond.get_res()
         pos = posgen.get_pos()
-        print(pos, ": ", "if", ret[0], ret[1], ret[2])
-        self.sttm.eval()
+        wyn = ""
+        wyn += ret
+        jumppos1 = 0
+        ret1 = self.sttm.eval()
         if(self.sttm2 != 0):
-            pos = posgen.get_pos()
-            print(pos, ": ", "if", "==", 1, 1)
-            self.sttm2.eval()
+            pos2 = posgen.get_pos()
+            jumppos1 = posgen.get_jump_pos()
+            ret2 = self.sttm2.eval()
+            jumppos2 = posgen.get_jump_pos()
+            wyn2 = ""
+            wyn2 += str(pos2) + ": " + "if" + "== " + "1 " + "1 " + str(jumppos2) + "\n"
+            wyn2 += ret2
+        if(jumppos1 == 0):
+            jumppos1 = posgen.get_jump_pos()
+        wyn += str(pos) + ": " + "if" + invert_op(retmem[0]) + " " + retmem[1] + " " + retmem[2] + " " + str(jumppos1) + "\n"
+        wyn += ret1
+        wyn += wyn2
+        return wyn
     
 class ListInstr():
     def __init__(self, l_instr):
         self.l_instr = l_instr
         
     def eval(self):
+        wyn = ""
         for i in self.l_instr:
-            i.eval()
+            wyn += i.eval()
+        return wyn
     
 
 
@@ -171,7 +225,7 @@ def p_error(p):
 def p_program(p):
     """program : instructions"""
     p[0] = ListInstr(p[1])
-    p[0].eval()
+    print(p[0].eval())
 
 def p_instructions(p):
     """instructions : instructions instruction
