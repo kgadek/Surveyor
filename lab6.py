@@ -24,6 +24,9 @@ class Pos():
         self.counter += 1
         return newpos
         
+    def get_jump(self):
+        newpos = str(self.counter)
+        return newpos
 
 class Expr():
     def __init__(self, arg1, op, arg2):
@@ -68,13 +71,39 @@ class Assign():
         print(pos, ": ", ret1, " = ", ret2)
 
 class Compar():
-    pass
+    def __init__(self, arg1, op, arg2):
+        self.op = op
+        self.arg1 = arg1
+        self.arg2 = arg2
+        
+    def eval(self):
+        ret1 = self.arg1.eval()
+        ret2 = self.arg2.eval()
+        return (self.op,ret1,ret2)
     
 class ChoiceInstr():
-    pass
+    def __init__(self, cond, sttm, sttm2):
+        self.cond = cond
+        self.sttm = sttm
+        self.sttm2 = sttm2
+        
+    def eval(self):
+        ret = self.cond.eval()
+        pos = posgen.get_pos()
+        print(pos, ": ", "if", ret[0], ret[1], ret[2])
+        self.sttm.eval()
+        if(self.sttm2 != 0):
+            pos = posgen.get_pos()
+            print(pos, ": ", "if", "==", 1, 1)
+            self.sttm2.eval()
     
 class ListInstr():
-    pass
+    def __init__(self, l_instr):
+        self.l_instr = l_instr
+        
+    def eval(self):
+        for i in self.l_instr:
+            i.eval()
     
 
 
@@ -141,23 +170,38 @@ def p_error(p):
 
 def p_program(p):
     """program : instructions"""
-
+    p[0] = ListInstr(p[1])
+    p[0].eval()
 
 def p_instructions(p):
     """instructions : instructions instruction
                     | instruction"""
-    
+
+    if(len(p) == 3):
+        if(type(p[1]) == list):
+            x = []
+            x.extend(p[1])
+            x.append(p[2])
+            p[0] = x
+        else:
+            x = []
+            x.append(p[2])
+            p[0] = x
+    else:
+        x = []
+        x.append(p[1])
+        p[0] = x
 
 def p_instruction(p):
     """instruction : assignment
                    | choice_instr"""
     
-
+    p[0] = p[1]
+    
 def p_assignment(p):
     """assignment : ID '=' expression ';' """
     
     p[0] = Assign(Var(p[1]),p[3])
-    p[0].eval()
 
 def p_expression(p):
     """expression : NUMBER
@@ -182,7 +226,10 @@ def p_expression(p):
 def p_choice_instr(p):
     """choice_instr : IF '(' condition ')' stmt %prec IFX
                     | IF '(' condition ')' stmt ELSE stmt """
-
+    if(len(p) == 6):
+        p[0] = ChoiceInstr(p[3], p[5], 0)
+    else:
+        p[0] = ChoiceInstr(p[3], p[5], p[7])
 
 def p_condition(p):
     """condition : expression EQ  expression
@@ -191,12 +238,19 @@ def p_condition(p):
                  | expression LE  expression
                  | expression '<' expression
                  | expression '>' expression """
-
+                 
+    p[0] = Compar(p[1],p[2],p[3])
+    
 def p_stmt(p):
     """stmt : assignment
             | '{' instructions '}'
             | choice_instr """
-
+    
+    if(len(p) == 2):
+        p[0] = p[1]
+    else:
+        p[0] = ListInstr(p[2])
+        
 
 if len(sys.argv)>1:
     file = open(sys.argv[1], "r");
