@@ -6,6 +6,8 @@ import ply.lex as lex;
 import ply.yacc as yacc;
 
 def invert_op(op):
+    """odwraca operator, potrzebne zeby zaprzeczyc 
+    warunek przy instrukcji if, a to z kolei jest potrzebne bo mamy mniej skokow dzieki temu"""
     if(op == "<"): return ">="
     elif(op == ">"): return "<="
     elif(op == ">="): return "<"
@@ -14,6 +16,7 @@ def invert_op(op):
     elif(op == "!="): return "=="
 
 class Mem():
+    """zwraca nam kolejne zmienne tymczasowe mem1, mem2, ..."""
     def __init__(self):
         self.counter = 1
         
@@ -23,19 +26,23 @@ class Mem():
         return newmem
         
 class Pos():
+    """zwraca nam adresy w pamieci"""
     def __init__(self):
         self.counter = 101
         
     def get_pos(self):
+        """tutaj adres kolejnej instrukcji"""
         newpos = str(self.counter)
         self.counter += 1
         return newpos
         
     def get_jump_pos(self):
+        """natomiast tutaj adres do ktorego mamy zrobic skok"""
         newpos = str(self.counter)
         return newpos
 
 class Expr():
+    """expr to jakies dzialanie, np. 2+2, wynik zapisywany jest w zmiennej tymczasowej mem"""
     def __init__(self, arg1, op, arg2):
         self.op = op
         self.arg1 =  arg1
@@ -43,9 +50,12 @@ class Expr():
         self.mem = ""
     
     def get_res(self):
+        """zwraca nam numerek zmiennej mem w ktorej jest wynik"""
         return self.mem
     
     def eval(self):
+        """ewaluuje dziecji w drzewie syntaktycznym, pobiera memy ktore zwroca
+        i robi stringa (generuje swoj kod) ktorego przekazuje do przodka w drzewie"""
         ret1 = self.arg1.eval()
         ret2 = self.arg2.eval()
         retmem1 = self.arg1.get_res()
@@ -60,6 +70,7 @@ class Expr():
         return wyn
 
 class Const():
+    """stała, jakas liczba, jeśli float z zerem po przecinku to zamieniam na inta"""
     def __init__(self, val):
         if(val == math.floor(val)):
             self.val = int(val)
@@ -70,9 +81,11 @@ class Const():
         return str(self.val)
     
     def eval(self):
+        """stała nie generuje zadnego kodu wiec pusty"""
         return ""
 
 class Var():
+    """zmienna, podobnie jak przy stałej"""
     def __init__(self, name):
         self.name = name
         
@@ -83,11 +96,13 @@ class Var():
         return ""
     
 class Assign():
+    """przypisanie wyniku do zmiennej"""
     def __init__(self, left, right):
         self.left = left
         self.right = right
         
     def eval(self):
+        """ewaluuje dzieci, pobiera ich wyniki i tworzy swoj kod który zwraca do przodka"""
         ret1 = self.left.eval()
         ret2 = self.right.eval()
         retmem1 = self.left.get_res()
@@ -100,6 +115,7 @@ class Assign():
         return wyn
 
 class Compar():
+    """porownanie"""
     def __init__(self, arg1, op, arg2):
         self.op = op
         self.arg1 = arg1
@@ -111,6 +127,7 @@ class Compar():
         return (self.op,self.retmem1,self.retmem2)
     
     def eval(self):
+        """analogicznie jak pozostałe"""
         ret1 = self.arg1.eval()
         ret2 = self.arg2.eval()
         wyn = ""
@@ -121,12 +138,16 @@ class Compar():
         return wyn
     
 class ChoiceInstr():
+    """instrukcja warunkowa if"""
     def __init__(self, cond, sttm, sttm2):
         self.cond = cond
         self.sttm = sttm
         self.sttm2 = sttm2
         
     def eval(self):
+        """tutaj chyba najtrudniejszy fragment, nie mam teraz czasu wiec tylko po krótce opowiem,
+        trzeba ewaluować warunek, sprawdzić czy to jest sam if czy if a potem else, poobliczać skoki...
+        jesli nie ma else to sttm2 == 0 bo tak wrzucam w parserze"""
         ret = self.cond.eval()
         retmem = self.cond.get_res()
         pos = posgen.get_pos()
@@ -150,10 +171,12 @@ class ChoiceInstr():
         return wyn
     
 class ListInstr():
+    """instrukcje w bloku {}"""
     def __init__(self, l_instr):
         self.l_instr = l_instr
         
     def eval(self):
+        """ewaluuje wszystkie po kolei"""
         wyn = ""
         for i in self.l_instr:
             wyn += i.eval()
